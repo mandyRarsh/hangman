@@ -1,0 +1,255 @@
+"""
+Ryan Fitzpatrick
+CIS 115: Final Project - Hangman with High Score Saver
+
+******************************************************************************************
+This is a two player game. First player inputs a word for the second player to guess.    \
+If the word is guessed correctly, the player who guessed enters her name to be recorded  \
+in the "hiscore.txt" file. High scores are displayed at the end of the game in order     \
+from greatest to least. Scoring is determined as:                                        \
+                                                                                         \
+(characters in secret word * 10) - incorrect guesses                                     \
+******************************************************************************************
+
+December 1, 2014
+"""
+MAX_CHARACTERS = 15
+HANGMANPICS = ['''
+
+  +---+
+  |   |
+      |
+      |
+      |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+      |
+      |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+  |   |
+      |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+ /|   |
+      |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+ /|\  |
+      |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+ /|\  |
+ /    |
+      |
+=========''', '''
+
+  +---+
+  |   |
+  O   |
+ /|\  |
+ / \  |
+      |
+=========''']
+
+
+def showHighScore():
+    inFile = open('hiscore.txt','r')
+    linesOfHiScore = inFile.readlines()
+    i=0 #parallel index counter for scores and names
+    scores=[""]*40
+    names=[""]*40
+    n = 0 #name index holder
+    while i < len(linesOfHiScore):   #i counts number of elements in entire hiscore
+        oneLine = linesOfHiScore[i] #individual line (names)
+        oneLine = oneLine.strip()
+        t=0 #temp var to count each element of individual line for names
+        while oneLine[t] != (" ") and oneLine[t] != ("\n"):
+            names[i]+=oneLine[t] #adds a character to names from a line til theres a space
+            t+=1
+        t=0
+        oneLine = linesOfHiScore[i] #individual line (scores)
+        oneLine = oneLine.strip()
+        while oneLine[t] != (" "):
+            scores[i]=oneLine[t:t+2]  #scans for the space then assigns score[i] the next 2 characters :(
+            t+=1
+        scores[i]=oneLine[t+1:t+3]
+        i+=1
+    inFile.close()
+    lookup(names, scores, i)
+    
+
+
+def lookup(names,scores,i):
+    
+    print("   HIGH SCORES\n")
+    bubbleSort(scores, i)
+    for p in range (i):
+        print (names[p]+(("."*(15-len(names[p]))+scores[p]))) #prints scores sorted greatest to least with equal spacing
+    
+def bubbleSort (a, n):
+    for j in range (n-1, 1, -1):
+        for i in range(j):
+            if a[i] < a[i+1]:
+                swap (a, i, i+1)
+            
+
+def swap (a, i, j):
+    t = a[i]
+    a[i] = a[j]
+    a[j] = t
+   
+def getSecretWord():
+    # Get the secret word and check it is valid - then print 100 blank lines to hide from other player
+    secretWord = str(input("Enter a word for the other player to guess:\n\n"))
+    secretWord = secretWord.lower()
+    i = 0
+    alphabet = 'abcdefghijklmnopqrstuvwxyz'
+    while i < len(secretWord):
+        if secretWord[i] not in alphabet:
+            secretWord=str(input("You can't use spaces, numbers, or special characters\nEnter one word for the other player to guess:\n\n"))
+        else:
+            i+=1
+    print ("\n"*100)
+    return secretWord.lower()
+
+def displayBoard(HANGMANPICS, missedLetters, correctLetters, secretWord):
+    print(HANGMANPICS[len(missedLetters)])
+    print()
+
+    print('Missed letters:', end=' ')
+    print ()
+    for letter in missedLetters:
+        print(letter, end=' ')
+    print()
+
+    blanks = '_' * len(secretWord)
+    
+    for i in range(len(secretWord)): # replace blanks with correctly guessed letters
+        if secretWord[i] in correctLetters:
+            blanks = blanks[:i] + secretWord[i] + blanks[i+1:]
+    print ()
+    for letter in blanks: # show the secret word with spaces in between each letter
+        print(letter, end=' ')
+    print()
+
+def getGuess(alreadyGuessed):
+    # Returns the letter the player entered. This function makes sure the player entered a single letter, and not something else.
+    while True:
+        print ()
+        print('Guess a letter:')
+        print ()
+        guess = input()
+        guess = guess.lower()
+        if len(guess) != 1:
+            print('Please enter a single letter.')
+        elif guess in alreadyGuessed:
+            print('You have already guessed that letter. Choose again.')
+        elif guess not in 'abcdefghijklmnopqrstuvwxyz':
+            print('Please enter a LETTER.')
+        else:
+            print("\n"*100)
+            return guess
+
+def playAgain():
+    # This function returns True if the player wants to play again, otherwise it returns False.
+    print ("\n\n")
+    choice=int(input('Enter 1 to play again\n'))
+    if choice==1:
+        return True
+    else:
+        return False
+ 
+        
+
+
+def main():
+    print ("\n"*100)
+    print('...W E L C O M E    T O   H A N G M A N...')
+    print ("""
+                +---+
+                |   |
+                O   |
+               /|\  |
+               / \  |
+                    |
+               =========\n""")
+    missedLetters = ''
+    correctLetters = ''
+    secretWord = getSecretWord()
+    gameIsDone = False
+    
+
+    while True:            #start game
+        displayBoard(HANGMANPICS, missedLetters, correctLetters, secretWord)
+
+        #takes one and only one letter from user
+        guess = getGuess(missedLetters + correctLetters)
+
+        if guess in secretWord:
+            correctLetters = correctLetters + guess
+
+            # Check if the player has won
+            foundAllLetters = True
+            for i in range(len(secretWord)):
+                if secretWord[i] not in correctLetters:
+                    foundAllLetters = False
+                    break
+            if foundAllLetters: #shows word, calculates score, writes score to hiscore.txt file
+                print('Yes! The secret word is "' + secretWord + '"! You have won!')
+                score = ((len(secretWord))*10) - len(missedLetters)  #score = (length secret word * 10) - number of letters wrong
+                score = str(score)
+                print ("You scored "+score+" points!")
+                winnerName = input("Enter your name for high score: ")
+                while winnerName[0:] == " ":
+                    winnerName=input("Please no spaces in the winner's name!\nEnter your name for high score: ")
+                outFile = open('hiscore.txt','a+')
+                outFile.write(winnerName+" "+score+"\n")
+                outFile.close()
+                print ("\n"*100)
+                print ("Congrats "+winnerName+"! Your score of "+score+" has been recorded")
+                print ("\n\n")
+                gameIsDone = True
+        else:
+            missedLetters = missedLetters + guess
+
+            # Check if player has guessed too many times and lost
+            if len(missedLetters) == len(HANGMANPICS) - 1:
+                displayBoard(HANGMANPICS, missedLetters, correctLetters, secretWord)
+                print('You have run out of guesses!\nAfter ' + str(len(missedLetters)) + ' missed guesses and ' + str(len(correctLetters)) + ' correct guesses, the word was "' + secretWord + '"')
+                gameIsDone = True
+
+        # Ask the player if they want to play again after displaying high scores (but only if the game is done).
+        if gameIsDone:
+            showHighScore()
+            if playAgain():
+                missedLetters = ''
+                correctLetters = ''
+                gameIsDone = False
+                secretWord = getSecretWord()
+           
+                
+            else:
+                break
+
+main()    
